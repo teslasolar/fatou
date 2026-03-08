@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>WORD DRIP — Bloom</title>
+<style>
+:root {
+  --bg1: #fce4ec;
+  --bg2: #f3e5f5;
+  --accent: #e91e63;
+  --accent2: #9c27b0;
+  --gold: #ffd54f;
+  --green: #66bb6a;
+  --red: #ef5350;
+  --text: #37474f;
+  --card: rgba(255,255,255,0.92);
+  --shadow: 0 2px 16px rgba(0,0,0,0.10);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, var(--bg1), var(--bg2));
+  min-height: 100vh;
+  color: var(--text);
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ===== SCREENS ===== */
+.screen { display: none; flex-direction: column; min-height: 100vh; padding: 12px; }
+.screen.active { display: flex; }
+
+/* ===== TITLE SCREEN ===== */
+#title-screen {
+  justify-content: center; align-items: center; gap: 24px; text-align: center;
+}
+#title-screen h1 { font-size: 2.4em; letter-spacing: 2px; }
+#title-screen h1 span { color: var(--accent); }
+#title-screen p.tagline { font-size: 1em; opacity: 0.7; max-width: 300px; }
+.btn {
+  display: inline-block; padding: 14px 36px; border: none; border-radius: 28px;
+  font-size: 1.1em; font-weight: 600; cursor: pointer;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; box-shadow: var(--shadow); transition: transform 0.15s;
+}
+.btn:active { transform: scale(0.96); }
+.btn-secondary {
+  background: var(--card); color: var(--text); border: 2px solid var(--accent);
+}
+.btn-small { padding: 10px 20px; font-size: 0.9em; }
+.btn-grid { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 280px; }
+
+/* ===== CUSTOMIZE SCREEN ===== */
+#customize-screen { align-items: center; gap: 16px; padding-top: 24px; }
+#customize-screen h2 { font-size: 1.3em; }
+.customize-section { width: 100%; max-width: 360px; }
+.customize-section h3 { font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; opacity: 0.6; }
+.option-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+.option-btn {
+  width: 52px; height: 52px; border-radius: 50%; border: 3px solid transparent;
+  cursor: pointer; transition: border-color 0.2s, transform 0.15s;
+}
+.option-btn.selected { border-color: var(--accent); transform: scale(1.12); }
+.option-btn:active { transform: scale(0.95); }
+.hair-btn, .body-btn { display: flex; align-items: center; justify-content: center; font-size: 0.65em; background: var(--card); }
+
+/* ===== GAME SCREEN ===== */
+#game-screen { gap: 8px; }
+.top-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 4px; font-size: 0.85em;
+}
+.top-bar .look-name { font-weight: 700; }
+.stars { color: var(--gold); letter-spacing: 2px; }
+.progress-wrap { height: 6px; background: rgba(0,0,0,0.08); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 3px; transition: width 0.4s; }
+
+/* Character area */
+.character-area {
+  flex: 1; display: flex; justify-content: center; align-items: center;
+  min-height: 280px; position: relative;
+}
+#character-svg { width: 180px; max-height: 380px; }
+.item-unlock-anim {
+  animation: itemPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes itemPop {
+  0% { opacity: 0; transform: scale(0.3) translateY(40px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Challenge area */
+.challenge-area {
+  background: var(--card); border-radius: 20px; padding: 18px 16px;
+  box-shadow: var(--shadow); min-height: 200px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.challenge-type { font-size: 0.7em; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.5; }
+.challenge-prompt { font-size: 1.05em; line-height: 1.5; }
+.challenge-prompt .blank { border-bottom: 2px dashed var(--accent); padding: 0 8px; color: var(--accent); font-weight: 700; }
+.options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.option-card {
+  padding: 14px 10px; border-radius: 14px; border: 2px solid rgba(0,0,0,0.08);
+  background: #fff; text-align: center; font-size: 0.95em; cursor: pointer;
+  transition: all 0.15s; min-height: 48px; display: flex; align-items: center; justify-content: center;
+  word-break: break-word;
+}
+.option-card:active { transform: scale(0.96); }
+.option-card.correct { background: #e8f5e9; border-color: var(--green); color: var(--green); }
+.option-card.wrong { background: #ffebee; border-color: var(--red); color: var(--red); animation: shake 0.4s; }
+.option-card.disabled { pointer-events: none; opacity: 0.5; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.scramble-input {
+  width: 100%; padding: 14px; border-radius: 14px; border: 2px solid rgba(0,0,0,0.1);
+  font-size: 1.1em; text-align: center; text-transform: uppercase; letter-spacing: 3px;
+  outline: none;
+}
+.scramble-input:focus { border-color: var(--accent); }
+
+.definition-box {
+  background: #fff3e0; border-radius: 10px; padding: 10px 14px; font-size: 0.85em;
+  border-left: 3px solid #ff9800;
+}
+.outfit-progress { text-align: center; font-size: 0.8em; opacity: 0.6; padding: 4px 0; }
+
+/* Nav buttons */
+.nav-row { display: flex; gap: 10px; padding: 6px 0; }
+.nav-btn {
+  flex: 1; padding: 10px; border: none; border-radius: 12px; font-size: 0.8em;
+  cursor: pointer; background: var(--card); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+.nav-btn:active { transform: scale(0.97); }
+
+/* ===== LOOKS MAP ===== */
+#looks-screen { align-items: center; gap: 16px; padding-top: 20px; }
+#looks-screen h2 { font-size: 1.3em; }
+.looks-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; }
+.look-card {
+  background: var(--card); border-radius: 16px; padding: 16px; box-shadow: var(--shadow);
+  display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+  transition: transform 0.15s;
+}
+.look-card:active { transform: scale(0.98); }
+.look-card.locked { opacity: 0.45; pointer-events: none; }
+.look-card .look-info h3 { font-size: 1em; }
+.look-card .look-info p { font-size: 0.75em; opacity: 0.6; }
+.look-card .look-stars { font-size: 1.2em; color: var(--gold); }
+
+/* ===== WARDROBE ===== */
+#wardrobe-screen { align-items: center; gap: 12px; padding-top: 16px; }
+#wardrobe-screen h2 { font-size: 1.3em; }
+.filter-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.filter-btn {
+  padding: 6px 14px; border-radius: 20px; border: 2px solid rgba(0,0,0,0.08);
+  background: #fff; font-size: 0.8em; cursor: pointer;
+}
+.filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.wardrobe-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  width: 100%; max-width: 400px;
+}
+.wardrobe-item {
+  aspect-ratio: 1; background: var(--card); border-radius: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 0.65em; text-align: center; padding: 4px; cursor: pointer;
+  border: 2px solid transparent; transition: border-color 0.2s;
+}
+.wardrobe-item.equipped { border-color: var(--accent); }
+.wardrobe-item svg { width: 36px; height: 36px; }
+.wardrobe-char { display: flex; justify-content: center; padding: 8px 0; }
+
+/* ===== PIDGIN CORNER ===== */
+#pidgin-screen { align-items: center; gap: 12px; padding-top: 16px; }
+#pidgin-screen h2 { font-size: 1.3em; }
+.pidgin-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; }
+.pidgin-card {
+  background: var(--card); border-radius: 14px; padding: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+.pidgin-card .pidgin { font-weight: 700; color: var(--accent); font-size: 1em; }
+.pidgin-card .english { font-size: 0.9em; margin-top: 4px; }
+.pidgin-card.locked { opacity: 0.35; }
+
+/* ===== DAILY ===== */
+#daily-screen { align-items: center; gap: 16px; padding-top: 24px; }
+.streak-display { font-size: 2em; font-weight: 800; color: var(--accent); }
+.streak-label { font-size: 0.9em; opacity: 0.6; }
+
+/* ===== CELEBRATION ===== */
+.celebration-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  display: none; justify-content: center; align-items: center; z-index: 100;
+  flex-direction: column; gap: 20px;
+}
+.celebration-overlay.active { display: flex; }
+.celebration-box {
+  background: var(--card); border-radius: 24px; padding: 32px 24px;
+  text-align: center; max-width: 320px; box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+  animation: celebPop 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes celebPop { 0% { transform: scale(0.5); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.celebration-box h2 { font-size: 1.4em; margin-bottom: 8px; }
+.celebration-box .big-stars { font-size: 2em; color: var(--gold); margin: 12px 0; }
+
+/* Confetti */
+.confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 99; overflow: hidden; }
+.confetti {
+  position: absolute; width: 8px; height: 8px; top: -10px;
+  animation: confettiFall 1.5s ease-in forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* Theme backgrounds per look */
+.theme-casual { --bg1: #e3f2fd; --bg2: #f1f8e9; }
+.theme-office { --bg1: #eceff1; --bg2: #e8eaf6; }
+.theme-night { --bg1: #1a1a2e; --bg2: #16213e; --text: #e0e0e0; --card: rgba(40,40,60,0.92); }
+.theme-cultural { --bg1: #fff3e0; --bg2: #fce4ec; }
+.theme-street { --bg1: #e0f2f1; --bg2: #e8f5e9; }
+.theme-redcarpet { --bg1: #fce4ec; --bg2: #f3e5f5; }
+.theme-signature { --bg1: #f3e5f5; --bg2: #ede7f6; }
+</style>
+</head>
+<body>
+
+<!-- TITLE SCREEN -->
+<div id="title-screen" class="screen active">
+  <h1>WORD <span>DRIP</span></h1>
+  <p class="tagline">Build outfits. Build vocabulary. The fashion IS the learning.</p>
+  <div class="btn-grid">
+    <button class="btn" onclick="showScreen('looks-screen')">Play</button>
+    <button class="btn btn-secondary" onclick="showScreen('wardrobe-screen')">Wardrobe</button>
+    <button class="btn btn-secondary" onclick="showScreen('pidgin-screen')">Pidgin Corner</button>
+    <button class="btn btn-secondary" onclick="showScreen('daily-screen')">Daily Word</button>
+  </div>
+  <p style="font-size:0.7em;opacity:0.4;margin-top:12px;">Made for Fatou</p>
+</div>
+
+<!-- CUSTOMIZE SCREEN -->
+<div id="customize-screen" class="screen">
+  <h2>Create Your Character</h2>
+  <div class="customize-section">
+    <h3>Skin Tone</h3>
+    <div class="option-row" id="skin-options"></div>
+  </div>
+  <div class="customize-section">
+    <h3>Hair Style</h3>
+    <div class="option-row" id="hair-options"></div>
+  </div>
+  <div class="customize-section">
+    <h3>Body Type</h3>
+    <div class="option-row" id="body-options"></div>
+  </div>
+  <div style="text-align:center;">
+    <svg id="preview-char" width="120" height="200" viewBox="0 0 120 200"></svg>
+  </div>
+  <button class="btn" onclick="saveCharacter()">Let's Go!</button>
+</div>
+
+<!-- LOOKS MAP -->
+<div id="looks-screen" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;max-width:400px;">
+    <button class="nav-btn" onclick="showScreen('title-screen')" style="flex:0;padding:10px 16px;">Back</button>
+    <h2>Choose a Look</h2>
+    <div style="width:48px;"></div>
+  </div>
+  <div class="looks-list" id="looks-list"></div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen" class="screen">
+  <div class="top-bar">
+    <button class="nav-btn" onclick="showScreen('looks-screen')" style="padding:6px 12px;flex:0;">Back</button>
+    <span class="look-name" id="game-look-name"></span>
+    <span class="stars" id="game-stars"></span>
+  </div>
+  <div class="progress-wrap"><div class="progress-fill" id="game-progress"></div></div>
+  <div class="character-area">
+    <svg id="character-svg" viewBox="0 0 180 380"></svg>
+  </div>
+  <div class="challenge-area" id="challenge-area"></div>
+  <div class="outfit-progress" id="outfit-progress"></div>
+</div>
+
+<!-- WARDROBE SCREEN -->
+<div id="wardrobe-screen" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;max-width:400px;">
+    <button class="nav-btn" onclick="showScreen('title-screen')" style="flex:0;padding:10px 16px;">Back</button>
+    <h2>Wardrobe</h2>
+    <div style="width:48px;"></div>
+  </div>
+  <div class="filter-row" id="wardrobe-filters"></div>
+  <div class="wardrobe-char"><svg id="wardrobe-char-svg" width="140" height="260" viewBox="0 0 180 380"></svg></div>
+  <div class="wardrobe-grid" id="wardrobe-grid"></div>
+</div>
+
+<!-- PIDGIN CORNER -->
+<div id="pidgin-screen" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;max-width:400px;">
+    <button class="nav-btn" onclick="showScreen('title-screen')" style="flex:0;padding:10px 16px;">Back</button>
+    <h2>Pidgin Corner</h2>
+    <div style="width:48px;"></div>
+  </div>
+  <p style="font-size:0.85em;opacity:0.6;max-width:360px;text-align:center;">Your collection of pidgin phrases and their formal English equivalents.</p>
+  <div class="pidgin-list" id="pidgin-list"></div>
+</div>
+
+<!-- DAILY CHALLENGE -->
+<div id="daily-screen" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;max-width:400px;">
+    <button class="nav-btn" onclick="showScreen('title-screen')" style="flex:0;padding:10px 16px;">Back</button>
+    <h2>Daily Word</h2>
+    <div style="width:48px;"></div>
+  </div>
+  <div class="streak-display" id="streak-count">0</div>
+  <div class="streak-label">Day Streak</div>
+  <div id="daily-challenge-area" style="width:100%;max-width:400px;"></div>
+  <div id="daily-reward" style="text-align:center;margin-top:12px;"></div>
+</div>
+
+<!-- CELEBRATION OVERLAY -->
+<div class="celebration-overlay" id="celebration">
+  <div class="celebration-box">
+    <h2 id="celeb-title">Look Complete!</h2>
+    <div class="big-stars" id="celeb-stars"></div>
+    <p id="celeb-msg"></p>
+    <button class="btn" onclick="closeCelebration()" style="margin-top:16px;">Continue</button>
+  </div>
+</div>
+<div class="confetti-container" id="confetti-container"></div>
+
+<script>
+// ===== STORAGE =====
+const S = {
+  get(k) { try { return JSON.parse(localStorage.getItem('wd_'+k)); } catch { return null; } },
+  set(k,v) { localStorage.setItem('wd_'+k, JSON.stringify(v)); }
+};
+
+// ===== CHARACTER CUSTOMIZATION =====
+const SKIN_TONES = ['#8D5524','#C68642','#F1C27D','#FFDBAC'];
+const HAIR_STYLES = ['short-curly','afro','braids','locs','bun','straight'];
+const HAIR_LABELS = ['Short Curly','Afro','Braids','Locs','Bun','Straight'];
+const BODY_TYPES = ['slim','medium','curvy'];
+const BODY_LABELS = ['Slim','Medium','Curvy'];
+
+let character = S.get('character') || { skin: 0, hair: 0, body: 1 };
+let gameState = S.get('gameState') || {
+  currentLook: 0,
+  lookProgress: {},
+  unlockedItems: [],
+  mistakes: {},
+  stars: {},
+  wardrobeOutfits: [],
+  pidginUnlocked: [],
+  streak: 0,
+  lastPlayDate: null,
+  dailyCompleted: null
+};
+
+function saveState() { S.set('gameState', gameState); }
+
+// ===== CLOTHING ITEMS DATABASE =====
+const CLOTHING = {
+  // Each item: { id, name, slot, svgRender, look }
+  // Slots: hair, top, bottom, shoes, acc1, acc2
+  // SVG render functions are defined per item
+};
+
+// ===== WORD DATABASE =====
+const WORDS = [
+  // LOOK 1: CASUAL DAY
+  {word:"bright",definition:"Giving out or reflecting much light; vivid",difficulty:1,category:"adjective",pidgin:"E dey shine",example:"She wore a bright yellow sundress.",wrong:["blight","brisk","brash"],unlocks:"casual_top",look:0,type:"word_fit",sentence:"She picked a _____ yellow sundress for the afternoon walk.",slot:"top"},
+  {word:"comfortable",definition:"Providing physical ease and relaxation",difficulty:1,category:"adjective",pidgin:"E dey relax body",example:"These shoes are very comfortable.",wrong:["comparable","combustible","compatible"],unlocks:"casual_shoes",look:0,type:"word_fit",sentence:"She chose _____ sneakers that she could walk in all day.",slot:"shoes"},
+  {word:"casual",definition:"Relaxed and unconcerned; informal",difficulty:1,category:"adjective",pidgin:"No too do",example:"A casual outfit for a weekend stroll.",wrong:["causal","coastal","crystal"],unlocks:"casual_bottom",look:0,type:"synonym",sentence:"",slot:"bottom"},
+  {word:"trendy",definition:"Very fashionable or up to date",difficulty:1,category:"adjective",pidgin:"E dey follow fashion",example:"She always wears trendy accessories.",wrong:["tricky","timely","toasty"],unlocks:"casual_acc1",look:0,type:"context",sentence:"",slot:"acc1"},
+  {word:"denim",definition:"A sturdy cotton twill fabric, typically blue",difficulty:1,category:"noun",pidgin:"Jean cloth",example:"She paired her top with classic denim jeans.",wrong:["daemon","domain","delmin"],unlocks:"casual_hair",look:0,type:"scramble",sentence:"",slot:"hair"},
+
+  // LOOK 2: OFFICE READY
+  {word:"professional",definition:"Relating to or suitable for a profession; competent",difficulty:2,category:"adjective",pidgin:"E sabi work well",example:"She looked professional in her tailored suit.",wrong:["provisional","promotional","processional"],unlocks:"office_top",look:1,type:"word_fit",sentence:"Her _____ attire impressed everyone at the meeting.",slot:"top"},
+  {word:"tailored",definition:"Made or fitted for a particular purpose or person",difficulty:2,category:"adjective",pidgin:"E cut am well well",example:"A perfectly tailored blazer.",wrong:["tattered","talented","tempered"],unlocks:"office_bottom",look:1,type:"synonym",sentence:"",slot:"bottom"},
+  {word:"sleek",definition:"Smooth, elegant, and streamlined",difficulty:2,category:"adjective",pidgin:"E smooth die",example:"Her sleek ponytail completed the look.",wrong:["slick","slack","sleet"],unlocks:"office_shoes",look:1,type:"word_fit",sentence:"She styled her hair in a _____ low bun for the presentation.",slot:"shoes"},
+  {word:"polished",definition:"Refined, elegant, or well-prepared",difficulty:2,category:"adjective",pidgin:"E clean finish",example:"Her polished appearance spoke volumes.",wrong:["punished","published","perished"],unlocks:"office_acc1",look:1,type:"context",sentence:"",slot:"acc1"},
+  {word:"blouse",definition:"A woman's upper garment resembling a shirt",difficulty:2,category:"noun",pidgin:"Fine woman shirt",example:"A silk blouse tucked into high-waisted trousers.",wrong:["browse","bounce","bleach"],unlocks:"office_acc2",look:1,type:"scramble",sentence:"",slot:"acc2"},
+  {word:"modest",definition:"Dressing or behaving to avoid impropriety",difficulty:2,category:"adjective",pidgin:"No too open body",example:"A modest but elegant office outfit.",wrong:["modern","molest","modest"],unlocks:"office_hair",look:1,type:"word_fit",sentence:"She preferred a _____ neckline for the workplace.",slot:"hair"},
+
+  // LOOK 3: NIGHT OUT
+  {word:"stunning",definition:"Extremely impressive or attractive",difficulty:2,category:"adjective",pidgin:"E fine die!",example:"She arrived in a stunning evening gown.",wrong:["stanning","standing","stoning"],unlocks:"night_top",look:2,type:"word_fit",sentence:"She arrived at the gala in a _____ gown that turned every head.",slot:"top"},
+  {word:"radiant",definition:"Sending out light; shining or glowing brightly",difficulty:2,category:"adjective",pidgin:"E dey shine well well",example:"Her radiant smile lit up the room.",wrong:["radical","rapid","random"],unlocks:"night_acc1",look:2,type:"synonym",sentence:"",slot:"acc1"},
+  {word:"glamorous",definition:"Having an exciting and attractive quality",difficulty:2,category:"adjective",pidgin:"Omo, e too fine!",example:"A glamorous look for the red carpet.",wrong:["gluttonous","glamourous","dangerous"],unlocks:"night_bottom",look:2,type:"word_fit",sentence:"The _____ sequin dress shimmered under the lights.",slot:"bottom"},
+  {word:"elegant",definition:"Gracefully refined and stylish",difficulty:2,category:"adjective",pidgin:"Fine well well",example:"She wore an elegant dress to the ceremony.",wrong:["elephant","eloquent","electric"],unlocks:"night_acc2",look:2,type:"scramble",sentence:"",slot:"acc2"},
+  {word:"exquisite",definition:"Extremely beautiful and delicate",difficulty:3,category:"adjective",pidgin:"E too fine, e no get part two",example:"The exquisite beadwork on her dress was handmade.",wrong:["expensive","exclusive","excessive"],unlocks:"night_shoes",look:2,type:"context",sentence:"",slot:"shoes"},
+  {word:"sophisticated",definition:"Having worldly experience and refined taste",difficulty:3,category:"adjective",pidgin:"Big girl ting",example:"Her sophisticated outfit was perfect for the event.",wrong:["suffocated","domesticated","complicated"],unlocks:"night_hair",look:2,type:"context",sentence:"",slot:"hair"},
+
+  // LOOK 4: CULTURAL QUEEN
+  {word:"ankara",definition:"A vibrant African wax print fabric",difficulty:2,category:"noun",pidgin:"Wrapper cloth",example:"She wore a stunning ankara dress to the festival.",wrong:["antenna","anchor","antler"],unlocks:"cultural_top",look:3,type:"word_fit",sentence:"The _____ fabric featured bold geometric patterns.",slot:"top"},
+  {word:"embroidered",definition:"Decorated with needlework patterns",difficulty:3,category:"adjective",pidgin:"Dem sew design for am",example:"An embroidered kaftan with gold thread.",wrong:["embraced","embodied","embittered"],unlocks:"cultural_bottom",look:3,type:"word_fit",sentence:"The _____ neckline featured delicate floral patterns in gold thread.",slot:"bottom"},
+  {word:"vibrant",definition:"Full of energy and life; bright and striking",difficulty:2,category:"adjective",pidgin:"E get colour well well",example:"Vibrant colours filled the marketplace.",wrong:["vagrant","variant","violent"],unlocks:"cultural_acc1",look:3,type:"synonym",sentence:"",slot:"acc1"},
+  {word:"heritage",definition:"Valued traditions and culture passed through generations",difficulty:3,category:"noun",pidgin:"Wetin our papa dem leave for us",example:"The design celebrated her cultural heritage.",wrong:["hermitage","hostage","homage"],unlocks:"cultural_shoes",look:3,type:"word_fit",sentence:"The outfit was a tribute to her _____, blending tradition with modern style.",slot:"shoes"},
+  {word:"intricate",definition:"Very detailed and complicated in design",difficulty:3,category:"adjective",pidgin:"Dem take time do am",example:"The intricate beading took weeks to complete.",wrong:["intimate","integrate","interact"],unlocks:"cultural_acc2",look:3,type:"context",sentence:"",slot:"acc2"},
+  {word:"textile",definition:"A type of cloth or woven fabric",difficulty:3,category:"noun",pidgin:"Cloth material",example:"Nigerian textiles are known worldwide.",wrong:["texture","textbook","taxicab"],unlocks:"cultural_hair",look:3,type:"scramble",sentence:"",slot:"hair"},
+  {word:"adornment",definition:"A decoration or ornament",difficulty:3,category:"noun",pidgin:"Wetin you take fine yourself",example:"Gold adornments complemented her outfit.",wrong:["amusement","apartment","advancement"],unlocks:"cultural_acc3",look:3,type:"word_fit",sentence:"The golden _____ on her wrist caught the light beautifully.",slot:"acc1"},
+
+  // LOOK 5: STREET STYLE
+  {word:"edgy",definition:"At the forefront of a trend; daring",difficulty:2,category:"adjective",pidgin:"E dey do strong thing",example:"Her edgy style set her apart.",wrong:["easy","eager","early"],unlocks:"street_top",look:4,type:"synonym",sentence:"",slot:"top"},
+  {word:"versatile",definition:"Able to adapt to many different functions or activities",difficulty:3,category:"adjective",pidgin:"E fit do anyhow",example:"A versatile jacket that works with any outfit.",wrong:["vertical","virtual","vengeful"],unlocks:"street_bottom",look:4,type:"word_fit",sentence:"The _____ denim jacket worked with dresses, jeans, and everything between.",slot:"bottom"},
+  {word:"authentic",definition:"Genuine, real, true to one's own personality",difficulty:3,category:"adjective",pidgin:"Na real tin, no be fake",example:"Her authentic style reflected her personality.",wrong:["automatic","artistic","athletic"],unlocks:"street_shoes",look:4,type:"context",sentence:"",slot:"shoes"},
+  {word:"layered",definition:"Wearing multiple items of clothing on top of each other",difficulty:2,category:"adjective",pidgin:"Cloth on top cloth",example:"A layered look with a crop top and oversized jacket.",wrong:["labored","lettered","littered"],unlocks:"street_acc1",look:4,type:"word_fit",sentence:"She created a _____ outfit with a tank top, flannel, and denim vest.",slot:"acc1"},
+  {word:"statement",definition:"A bold piece that draws attention",difficulty:2,category:"noun",pidgin:"Wetin dey shout for body",example:"Those boots are a real statement piece.",wrong:["settlement","sentiment","stalemate"],unlocks:"street_acc2",look:4,type:"word_fit",sentence:"Her oversized sunglasses were the _____ piece of the whole outfit.",slot:"acc2"},
+  {word:"swagger",definition:"A confident and stylish manner of walking or behaving",difficulty:2,category:"noun",pidgin:"Steeze wey no get limit",example:"She walked in with pure swagger.",wrong:["swallow","sweater","swinger"],unlocks:"street_hair",look:4,type:"scramble",sentence:"",slot:"hair"},
+
+  // LOOK 6: RED CARPET
+  {word:"resplendent",definition:"Impressive through being richly colorful or sumptuous",difficulty:4,category:"adjective",pidgin:"E too fine pass fine",example:"She was resplendent in her golden gown.",wrong:["responsible","respondent","respectful"],unlocks:"red_top",look:5,type:"word_fit",sentence:"She was absolutely _____ in the hand-beaded golden gown.",slot:"top"},
+  {word:"sartorial",definition:"Relating to tailoring, clothes, or style of dress",difficulty:4,category:"adjective",pidgin:"Fashion matter",example:"Her sartorial choices were always impeccable.",wrong:["satirical","sectorial","tutorial"],unlocks:"red_bottom",look:5,type:"word_fit",sentence:"Critics praised her _____ excellence on the red carpet.",slot:"bottom"},
+  {word:"couture",definition:"The design and manufacture of fashionable clothes to a client's measurements",difficulty:3,category:"noun",pidgin:"Tailor wey sew for big people",example:"A couture gown designed specifically for her.",wrong:["culture","capture","creature"],unlocks:"red_shoes",look:5,type:"context",sentence:"",slot:"shoes"},
+  {word:"opulent",definition:"Ostentatiously costly and luxurious",difficulty:4,category:"adjective",pidgin:"Money no be problem",example:"The opulent fabric was imported from Paris.",wrong:["optional","opponent","occupied"],unlocks:"red_acc1",look:5,type:"synonym",sentence:"",slot:"acc1"},
+  {word:"silhouette",definition:"The dark shape or outline of someone or something",difficulty:3,category:"noun",pidgin:"How cloth take shape for body",example:"The dress created a beautiful silhouette.",wrong:["satellite","cigarette","etiquette"],unlocks:"red_acc2",look:5,type:"scramble",sentence:"",slot:"acc2"},
+  {word:"ethereal",definition:"Extremely delicate, light, and airy",difficulty:4,category:"adjective",pidgin:"Like say e come from heaven",example:"The ethereal fabric floated as she walked.",wrong:["eternal","external","ephemeral"],unlocks:"red_hair",look:5,type:"word_fit",sentence:"The _____ chiffon layers of her dress seemed to float on air.",slot:"hair"},
+  {word:"immaculate",definition:"Perfectly clean, neat, or tidy; free from flaws",difficulty:3,category:"adjective",pidgin:"E clean die, no single stain",example:"Her immaculate white suit was perfection.",wrong:["immediate","impartial","impractical"],unlocks:"red_acc3",look:5,type:"context",sentence:"",slot:"acc1"},
+
+  // LOOK 7: FATOU'S SIGNATURE
+  {word:"bespoke",definition:"Made to order; custom-made for an individual",difficulty:5,category:"adjective",pidgin:"Dem sew am just for you",example:"A bespoke suit tailored to perfection.",wrong:["baroque","berserk","beloved"],unlocks:"sig_top",look:6,type:"word_fit",sentence:"The _____ gown was crafted to fit her body perfectly.",slot:"top"},
+  {word:"iridescent",definition:"Showing luminous colours that change when seen from different angles",difficulty:5,category:"adjective",pidgin:"E dey change colour anyhow",example:"The iridescent fabric shimmered like a pearl.",wrong:["incandescent","independent","indifferent"],unlocks:"sig_bottom",look:6,type:"word_fit",sentence:"The _____ fabric shifted from blue to purple as she moved.",slot:"bottom"},
+  {word:"gossamer",definition:"A fine, filmy substance; extremely light and delicate",difficulty:5,category:"adjective",pidgin:"Thin like say breeze fit blow am",example:"Gossamer sleeves trailed behind her.",wrong:["gossip","glimmer","glamour"],unlocks:"sig_shoes",look:6,type:"context",sentence:"",slot:"shoes"},
+  {word:"diaphanous",definition:"Light, delicate, and translucent",difficulty:5,category:"adjective",pidgin:"You fit see through small",example:"A diaphanous veil covered her shoulders.",wrong:["dangerous","delirious","desirous"],unlocks:"sig_acc1",look:6,type:"word_fit",sentence:"The _____ fabric was so delicate you could almost see through it.",slot:"acc1"},
+  {word:"ineffable",definition:"Too great or extreme to be expressed in words",difficulty:5,category:"adjective",pidgin:"Word no fit describe am",example:"Her beauty was ineffable.",wrong:["inevitable","invisible","inflexible"],unlocks:"sig_acc2",look:6,type:"synonym",sentence:"",slot:"acc2"},
+  {word:"avant-garde",definition:"New and experimental; innovative in style",difficulty:4,category:"adjective",pidgin:"Fashion wey dey ahead of time",example:"Her avant-garde outfit challenged conventions.",wrong:["aftermath","advantage","avalanche"],unlocks:"sig_hair",look:6,type:"word_fit",sentence:"The designer was known for her _____ approach to fashion.",slot:"hair"},
+  {word:"transcendent",definition:"Surpassing the ordinary; exceptional",difficulty:5,category:"adjective",pidgin:"E pass everything wey you don see before",example:"The transcendent beauty of the collection left everyone speechless.",wrong:["transparent","transient","transplant"],unlocks:"sig_acc3",look:6,type:"scramble",sentence:"",slot:"acc1"}
+];
+
+// ===== LOOKS =====
+const LOOKS = [
+  { name: "Casual Day", theme: "casual", pieces: 5, desc: "Relaxed weekend vibes" },
+  { name: "Office Ready", theme: "office", pieces: 6, desc: "Professional and polished" },
+  { name: "Night Out", theme: "night", pieces: 6, desc: "Glamour after dark" },
+  { name: "Cultural Queen", theme: "cultural", pieces: 7, desc: "Heritage meets haute couture" },
+  { name: "Street Style", theme: "street", pieces: 6, desc: "Bold and authentic" },
+  { name: "Red Carpet", theme: "redcarpet", pieces: 7, desc: "Show-stopping elegance" },
+  { name: "Fatou's Signature", theme: "signature", pieces: 7, desc: "Your ultimate look" }
+];
+
+// ===== PIDGIN DICTIONARY =====
+const PIDGIN_DICT = [
+  {pidgin:"E fine die",english:"It's extremely beautiful",lookUnlock:0},
+  {pidgin:"Wahala dey",english:"There's a problem",lookUnlock:0},
+  {pidgin:"Na so e be",english:"That's how it is",lookUnlock:0},
+  {pidgin:"E sharp well well",english:"It's very stylish",lookUnlock:0},
+  {pidgin:"Omo see drip",english:"Wow, look at that outfit",lookUnlock:1},
+  {pidgin:"E dey shine well well",english:"It's radiant / glowing brightly",lookUnlock:1},
+  {pidgin:"No too do",english:"Keep it casual / relaxed",lookUnlock:1},
+  {pidgin:"E dey follow fashion",english:"It's very trendy / fashionable",lookUnlock:1},
+  {pidgin:"E sabi work well",english:"Very professional / competent",lookUnlock:2},
+  {pidgin:"E cut am well well",english:"It's perfectly tailored",lookUnlock:2},
+  {pidgin:"E smooth die",english:"It's very sleek and elegant",lookUnlock:2},
+  {pidgin:"E clean finish",english:"It's well polished and refined",lookUnlock:2},
+  {pidgin:"Big girl ting",english:"Sophisticated and mature",lookUnlock:2},
+  {pidgin:"Omo, e too fine!",english:"It's incredibly glamorous",lookUnlock:3},
+  {pidgin:"E get colour well well",english:"It's vibrant and colourful",lookUnlock:3},
+  {pidgin:"Dem take time do am",english:"It's intricately detailed",lookUnlock:3},
+  {pidgin:"Wetin our papa dem leave for us",english:"Our cultural heritage",lookUnlock:3},
+  {pidgin:"Wrapper cloth",english:"Ankara / African wax print fabric",lookUnlock:3},
+  {pidgin:"Dem sew design for am",english:"It's embroidered with patterns",lookUnlock:3},
+  {pidgin:"Wetin you take fine yourself",english:"Personal adornment / decoration",lookUnlock:3},
+  {pidgin:"E dey do strong thing",english:"It's edgy and daring",lookUnlock:4},
+  {pidgin:"E fit do anyhow",english:"It's versatile / adaptable",lookUnlock:4},
+  {pidgin:"Na real tin, no be fake",english:"It's authentic and genuine",lookUnlock:4},
+  {pidgin:"Cloth on top cloth",english:"A layered outfit",lookUnlock:4},
+  {pidgin:"Wetin dey shout for body",english:"A statement piece",lookUnlock:4},
+  {pidgin:"Steeze wey no get limit",english:"Incredible swagger / confidence",lookUnlock:4},
+  {pidgin:"E too fine pass fine",english:"Resplendent / impressively beautiful",lookUnlock:5},
+  {pidgin:"Fashion matter",english:"Sartorial / relating to style",lookUnlock:5},
+  {pidgin:"Tailor wey sew for big people",english:"Couture / high fashion",lookUnlock:5},
+  {pidgin:"Money no be problem",english:"Opulent / luxuriously rich",lookUnlock:5},
+  {pidgin:"How cloth take shape for body",english:"Silhouette / the shape or outline",lookUnlock:5},
+  {pidgin:"Like say e come from heaven",english:"Ethereal / light and heavenly",lookUnlock:5},
+  {pidgin:"E clean die, no single stain",english:"Immaculate / perfectly clean",lookUnlock:5},
+  {pidgin:"Dem sew am just for you",english:"Bespoke / custom-made",lookUnlock:6},
+  {pidgin:"E dey change colour anyhow",english:"Iridescent / showing shifting colours",lookUnlock:6},
+  {pidgin:"Thin like say breeze fit blow am",english:"Gossamer / extremely delicate",lookUnlock:6},
+  {pidgin:"You fit see through small",english:"Diaphanous / translucent and delicate",lookUnlock:6},
+  {pidgin:"Word no fit describe am",english:"Ineffable / beyond words",lookUnlock:6},
+  {pidgin:"Fashion wey dey ahead of time",english:"Avant-garde / innovative",lookUnlock:6},
+  {pidgin:"E pass everything wey you don see before",english:"Transcendent / surpassing ordinary",lookUnlock:6},
+  {pidgin:"Jean cloth",english:"Denim fabric",lookUnlock:0},
+  {pidgin:"Fine woman shirt",english:"A blouse / woman's top",lookUnlock:1},
+  {pidgin:"No too open body",english:"Modest / not revealing",lookUnlock:1},
+  {pidgin:"Cloth material",english:"Textile / woven fabric",lookUnlock:3},
+  {pidgin:"E dey relax body",english:"It's comfortable / at ease",lookUnlock:0},
+  {pidgin:"E dey shine",english:"It's bright and luminous",lookUnlock:0},
+];
+
+// ===== SVG RENDERING =====
+function renderCharacter(svgEl, equippedItems, animate) {
+  const skin = SKIN_TONES[character.skin];
+  const bodyW = character.body === 0 ? 38 : character.body === 1 ? 44 : 52;
+  const hipW = character.body === 0 ? 36 : character.body === 1 ? 44 : 56;
+  const shoulderW = bodyW + 6;
+
+  let svg = '';
+
+  // Legs
+  svg += `<rect x="${90-hipW/4-6}" y="245" width="14" height="75" rx="7" fill="${skin}"/>`;
+  svg += `<rect x="${90+hipW/4-8}" y="245" width="14" height="75" rx="7" fill="${skin}"/>`;
+
+  // Shoes slot
+  const hasShoes = equippedItems.includes('shoes');
+  if (hasShoes) {
+    svg += `<rect x="${90-hipW/4-9}" y="310" width="20" height="12" rx="4" fill="#333" class="${animate==='shoes'?'item-unlock-anim':''}"/>`;
+    svg += `<rect x="${90+hipW/4-11}" y="310" width="20" height="12" rx="4" fill="#333" class="${animate==='shoes'?'item-unlock-anim':''}"/>`;
+  }
+
+  // Bottom slot
+  const hasBottom = equippedItems.includes('bottom');
+  if (hasBottom) {
+    const lookIdx = currentLookIndex != null ? currentLookIndex : 0;
+    const colors = ['#5C6BC0','#455A64','#1A1A2E','#E65100','#2E7D32','#880E4F','#4A148C'];
+    const c = colors[lookIdx % colors.length];
+    svg += `<path d="M${90-hipW/2} 195 L${90+hipW/2} 195 L${90+hipW/2+4} 248 L${90-hipW/2-4} 248 Z" fill="${c}" rx="4" class="${animate==='bottom'?'item-unlock-anim':''}"/>`;
+  }
+
+  // Body
+  svg += `<path d="M${90-shoulderW/2} 120 Q${90-bodyW/2-2} 160 ${90-hipW/2} 200 L${90+hipW/2} 200 Q${90+bodyW/2+2} 160 ${90+shoulderW/2} 120 Z" fill="${skin}"/>`;
+
+  // Top slot
+  const hasTop = equippedItems.includes('top');
+  if (hasTop) {
+    const lookIdx = currentLookIndex != null ? currentLookIndex : 0;
+    const colors = ['#FFB74D','#BBDEFB','#CE93D8','#FF7043','#A5D6A7','#FFD54F','#EF9A9A'];
+    const c = colors[lookIdx % colors.length];
+    svg += `<path d="M${90-shoulderW/2} 120 Q${90-bodyW/2-2} 160 ${90-hipW/2} 200 L${90+hipW/2} 200 Q${90+bodyW/2+2} 160 ${90+shoulderW/2} 120 Z" fill="${c}" class="${animate==='top'?'item-unlock-anim':''}"/>`;
+    // Sleeves
+    svg += `<rect x="${90-shoulderW/2-12}" y="120" width="14" height="40" rx="7" fill="${c}" class="${animate==='top'?'item-unlock-anim':''}"/>`;
+    svg += `<rect x="${90+shoulderW/2-2}" y="120" width="14" height="40" rx="7" fill="${c}" class="${animate==='top'?'item-unlock-anim':''}"/>`;
+  }
+
+  // Arms
+  svg += `<rect x="${90-shoulderW/2-10}" y="122" width="12" height="55" rx="6" fill="${skin}"/>`;
+  svg += `<rect x="${90+shoulderW/2-2}" y="122" width="12" height="55" rx="6" fill="${skin}"/>`;
+
+  // Neck
+  svg += `<rect x="82" y="90" width="16" height="32" rx="8" fill="${skin}"/>`;
+
+  // Head
+  svg += `<ellipse cx="90" cy="68" rx="30" ry="34" fill="${skin}"/>`;
+
+  // Eyes
+  svg += `<ellipse cx="79" cy="65" rx="3.5" ry="4" fill="#2C1810"/>`;
+  svg += `<ellipse cx="101" cy="65" rx="3.5" ry="4" fill="#2C1810"/>`;
+  svg += `<ellipse cx="80" cy="64" rx="1.2" ry="1.5" fill="#fff"/>`;
+  svg += `<ellipse cx="102" cy="64" rx="1.2" ry="1.5" fill="#fff"/>`;
+
+  // Nose & mouth
+  svg += `<ellipse cx="90" cy="73" rx="3" ry="2.5" fill="rgba(0,0,0,0.08)"/>`;
+  svg += `<path d="M83 82 Q90 88 97 82" fill="none" stroke="#c0392b" stroke-width="1.5" stroke-linecap="round"/>`;
+
+  // Hair
+  const hairColor = '#1a1a1a';
+  const hasHair = equippedItems.includes('hair');
+  const hairAnimClass = animate==='hair'?'item-unlock-anim':'';
+  switch(HAIR_STYLES[character.hair]) {
+    case 'short-curly':
+      svg += `<ellipse cx="90" cy="50" rx="32" ry="24" fill="${hairColor}"/>`;
+      for(let i=0;i<8;i++){
+        const a=Math.PI*0.15+i*Math.PI*0.1;
+        svg+=`<circle cx="${90+Math.cos(a)*28}" cy="${50-Math.sin(a)*20}" r="6" fill="${hairColor}"/>`;
+      }
+      break;
+    case 'afro':
+      svg += `<ellipse cx="90" cy="48" rx="42" ry="38" fill="${hairColor}"/>`;
+      for(let i=0;i<12;i++){
+        const a=i*Math.PI*2/12;
+        svg+=`<circle cx="${90+Math.cos(a)*38}" cy="${48+Math.sin(a)*34}" r="8" fill="${hairColor}"/>`;
+      }
+      break;
+    case 'braids':
+      svg += `<ellipse cx="90" cy="45" rx="33" ry="22" fill="${hairColor}"/>`;
+      for(let i=0;i<5;i++){
+        const x=62+i*14;
+        svg+=`<rect x="${x}" y="42" width="6" height="60" rx="3" fill="${hairColor}"/>`;
+      }
+      break;
+    case 'locs':
+      svg += `<ellipse cx="90" cy="46" rx="34" ry="23" fill="${hairColor}"/>`;
+      for(let i=0;i<7;i++){
+        const x=58+i*10;
+        svg+=`<rect x="${x}" y="40" width="5" height="${55+Math.sin(i)*10}" rx="2.5" fill="${hairColor}"/>`;
+      }
+      break;
+    case 'bun':
+      svg += `<ellipse cx="90" cy="45" rx="32" ry="22" fill="${hairColor}"/>`;
+      svg += `<circle cx="90" cy="28" r="14" fill="${hairColor}"/>`;
+      break;
+    case 'straight':
+      svg += `<ellipse cx="90" cy="46" rx="34" ry="24" fill="${hairColor}"/>`;
+      svg += `<rect x="56" y="44" width="12" height="55" rx="6" fill="${hairColor}"/>`;
+      svg += `<rect x="112" y="44" width="12" height="55" rx="6" fill="${hairColor}"/>`;
+      break;
+  }
+
+  // Accessory slot 1 (necklace)
+  const hasAcc1 = equippedItems.includes('acc1');
+  if (hasAcc1) {
+    svg += `<path d="M72 110 Q90 128 108 110" fill="none" stroke="#FFD54F" stroke-width="2.5" class="${animate==='acc1'?'item-unlock-anim':''}"/>`;
+    svg += `<circle cx="90" cy="124" r="4" fill="#FFD54F" class="${animate==='acc1'?'item-unlock-anim':''}"/>`;
+  }
+
+  // Accessory slot 2 (bag/bracelet)
+  const hasAcc2 = equippedItems.includes('acc2');
+  if (hasAcc2) {
+    svg += `<rect x="${90+shoulderW/2+6}" y="160" width="16" height="20" rx="4" fill="#8D6E63" class="${animate==='acc2'?'item-unlock-anim':''}"/>`;
+    svg += `<path d="M${90+shoulderW/2+10} 160 Q${90+shoulderW/2+14} 150 ${90+shoulderW/2+18} 160" fill="none" stroke="#8D6E63" stroke-width="2" class="${animate==='acc2'?'item-unlock-anim':''}"/>`;
+  }
+
+  // Hair accessory (only with hair equipped)
+  if (hasHair) {
+    const lookIdx = currentLookIndex != null ? currentLookIndex : 0;
+    const accColors = ['#FF4081','#7C4DFF','#FFD54F','#FF6E40','#00E676','#E040FB','#40C4FF'];
+    const ac = accColors[lookIdx % accColors.length];
+    svg += `<circle cx="115" cy="45" r="6" fill="${ac}" class="${hairAnimClass}"/>`;
+    svg += `<circle cx="112" cy="38" r="4" fill="${ac}" opacity="0.7" class="${hairAnimClass}"/>`;
+  }
+
+  svgEl.innerHTML = svg;
+}
+
+// ===== SCREEN MANAGEMENT =====
+let currentLookIndex = null;
+let currentChallengeIndex = 0;
+let lookMistakes = 0;
+let lookStartTime = 0;
+let challengeAnswered = false;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+
+  // Remove all theme classes
+  document.body.className = '';
+
+  if (id === 'looks-screen') renderLooksMap();
+  if (id === 'wardrobe-screen') renderWardrobe();
+  if (id === 'pidgin-screen') renderPidginCorner();
+  if (id === 'daily-screen') renderDaily();
+  if (id === 'customize-screen') renderCustomize();
+  if (id === 'title-screen') {
+    // Check if first time
+    if (!S.get('character')) {
+      showScreen('customize-screen');
+    }
+  }
+}
+
+// ===== CUSTOMIZE =====
+function renderCustomize() {
+  const skinRow = document.getElementById('skin-options');
+  const hairRow = document.getElementById('hair-options');
+  const bodyRow = document.getElementById('body-options');
+  skinRow.innerHTML = '';
+  hairRow.innerHTML = '';
+  bodyRow.innerHTML = '';
+
+  SKIN_TONES.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.className = 'option-btn' + (character.skin === i ? ' selected' : '');
+    b.style.background = c;
+    b.onclick = () => { character.skin = i; renderCustomize(); };
+    skinRow.appendChild(b);
+  });
+
+  HAIR_LABELS.forEach((l, i) => {
+    const b = document.createElement('button');
+    b.className = 'option-btn hair-btn' + (character.hair === i ? ' selected' : '');
+    b.textContent = l;
+    b.onclick = () => { character.hair = i; renderCustomize(); };
+    hairRow.appendChild(b);
+  });
+
+  BODY_LABELS.forEach((l, i) => {
+    const b = document.createElement('button');
+    b.className = 'option-btn body-btn' + (character.body === i ? ' selected' : '');
+    b.textContent = l;
+    b.onclick = () => { character.body = i; renderCustomize(); };
+    bodyRow.appendChild(b);
+  });
+
+  renderCharacter(document.getElementById('preview-char'), ['top','bottom','shoes','hair','acc1'], null);
+}
+
+function saveCharacter() {
+  S.set('character', character);
+  showScreen('title-screen');
+}
+
+// ===== LOOKS MAP =====
+function renderLooksMap() {
+  const list = document.getElementById('looks-list');
+  list.innerHTML = '';
+  LOOKS.forEach((look, i) => {
+    const unlocked = i === 0 || gameState.stars[i - 1] >= 1;
+    const stars = gameState.stars[i] || 0;
+    const card = document.createElement('div');
+    card.className = 'look-card' + (unlocked ? '' : ' locked');
+    card.innerHTML = `
+      <div class="look-info">
+        <h3>${unlocked ? '' : '🔒 '}${look.name}</h3>
+        <p>${look.desc} · ${look.pieces} pieces</p>
+      </div>
+      <div class="look-stars">${'★'.repeat(stars)}${'☆'.repeat(3-stars)}</div>
+    `;
+    if (unlocked) card.onclick = () => startLook(i);
+    list.appendChild(card);
+  });
+}
+
+// ===== START LOOK =====
+function startLook(lookIdx) {
+  currentLookIndex = lookIdx;
+  currentChallengeIndex = 0;
+  lookMistakes = 0;
+  lookStartTime = Date.now();
+  challengeAnswered = false;
+
+  if (!gameState.lookProgress[lookIdx]) {
+    gameState.lookProgress[lookIdx] = [];
+  }
+
+  const themes = ['theme-casual','theme-office','theme-night','theme-cultural','theme-street','theme-redcarpet','theme-signature'];
+  document.body.className = themes[lookIdx] || '';
+
+  // Find which challenge to resume from
+  const progress = gameState.lookProgress[lookIdx];
+  currentChallengeIndex = progress.length;
+
+  showScreen('game-screen');
+  updateGameUI();
+}
+
+function getLookWords(lookIdx) {
+  return WORDS.filter(w => w.look === lookIdx);
+}
+
+function updateGameUI() {
+  const look = LOOKS[currentLookIndex];
+  const words = getLookWords(currentLookIndex);
+  const progress = gameState.lookProgress[currentLookIndex] || [];
+
+  document.getElementById('game-look-name').textContent = look.name;
+  const stars = gameState.stars[currentLookIndex] || 0;
+  document.getElementById('game-stars').textContent = '★'.repeat(stars) + '☆'.repeat(3-stars);
+  document.getElementById('game-progress').style.width = (progress.length / words.length * 100) + '%';
+  document.getElementById('outfit-progress').textContent = `${progress.length}/${words.length} pieces`;
+
+  // Determine equipped slots
+  const equippedSlots = progress.map((wIdx) => words[wIdx] ? words[wIdx].slot : null).filter(Boolean);
+
+  // Render character
+  renderCharacter(document.getElementById('character-svg'), equippedSlots, null);
+
+  // Check if look is complete
+  if (currentChallengeIndex >= words.length) {
+    completeLook();
+    return;
+  }
+
+  // Render challenge
+  renderChallenge(words[currentChallengeIndex]);
+}
+
+// ===== CHALLENGES =====
+function renderChallenge(wordData) {
+  challengeAnswered = false;
+  const area = document.getElementById('challenge-area');
+  const type = wordData.type;
+
+  let html = '';
+  switch (type) {
+    case 'word_fit':
+      html = renderWordFit(wordData);
+      break;
+    case 'synonym':
+      html = renderSynonym(wordData);
+      break;
+    case 'context':
+      html = renderContext(wordData);
+      break;
+    case 'scramble':
+      html = renderScramble(wordData);
+      break;
+    default:
+      html = renderWordFit(wordData);
+  }
+  area.innerHTML = html;
+}
+
+function renderWordFit(w) {
+  const sentence = w.sentence || `The fashion expert described the look as _____ and unforgettable.`;
+  const parts = sentence.split('_____');
+  const options = shuffle([w.word, ...w.wrong]);
+  return `
+    <div class="challenge-type">Word Fit</div>
+    <div class="challenge-prompt">${parts[0]}<span class="blank">?</span>${parts[1]}</div>
+    <div class="options-grid">
+      ${options.map(o => `<div class="option-card" onclick="checkAnswer(this,'${esc(o)}','${esc(w.word)}')">${o}</div>`).join('')}
+    </div>
+  `;
+}
+
+function renderSynonym(w) {
+  const options = shuffle([w.word, ...w.wrong]);
+  return `
+    <div class="challenge-type">Synonym Swap</div>
+    <div class="challenge-prompt">Pidgin: "<strong>${w.pidgin}</strong>"<br>Which word means: <em>${w.definition}</em>?</div>
+    <div class="options-grid">
+      ${options.map(o => `<div class="option-card" onclick="checkAnswer(this,'${esc(o)}','${esc(w.word)}')">${o}</div>`).join('')}
+    </div>
+  `;
+}
+
+function renderContext(w) {
+  const wrongWord = w.wrong[0];
+  const correctSentence = w.example;
+  const wrongSentence = correctSentence.replace(w.word, wrongWord);
+  const aIsCorrect = Math.random() > 0.5;
+  const sentA = aIsCorrect ? correctSentence : wrongSentence;
+  const sentB = aIsCorrect ? wrongSentence : correctSentence;
+  window._contextCorrect = aIsCorrect ? 0 : 1;
+  return `
+    <div class="challenge-type">Context Clash</div>
+    <div class="challenge-prompt">Which sentence uses the word correctly?</div>
+    <div class="options-grid" style="grid-template-columns:1fr;">
+      <div class="option-card" onclick="checkContextIdx(this,0)" style="text-align:left;padding:12px 14px;">A: "${sentA}"</div>
+      <div class="option-card" onclick="checkContextIdx(this,1)" style="text-align:left;padding:12px 14px;">B: "${sentB}"</div>
+    </div>
+  `;
+}
+
+function checkContextIdx(el, idx) {
+  if (challengeAnswered) return;
+  challengeAnswered = true;
+  const cards = el.parentElement.querySelectorAll('.option-card');
+  cards.forEach(c => c.classList.add('disabled'));
+  const words = getLookWords(currentLookIndex);
+  const w = words[currentChallengeIndex];
+
+  if (idx === window._contextCorrect) {
+    el.classList.add('correct');
+    onCorrectAnswer(w);
+  } else {
+    el.classList.add('wrong');
+    lookMistakes++;
+    cards[window._contextCorrect].classList.add('correct');
+    const defBox = document.createElement('div');
+    defBox.className = 'definition-box';
+    defBox.innerHTML = `<strong>${w.word}</strong>: ${w.definition}`;
+    document.getElementById('challenge-area').appendChild(defBox);
+    setTimeout(() => advanceChallenge(), 2000);
+  }
+}
+
+function renderScramble(w) {
+  const scrambled = shuffle(w.word.toUpperCase().split('')).join(' ');
+  return `
+    <div class="challenge-type">Word Scramble</div>
+    <div class="challenge-prompt">Unscramble the letters to spell a fashion word:<br><strong style="font-size:1.3em;letter-spacing:4px;">${scrambled}</strong></div>
+    <div class="challenge-prompt" style="font-size:0.85em;opacity:0.6;">Hint: ${w.definition}</div>
+    <input class="scramble-input" id="scramble-input" placeholder="Type your answer..." autocomplete="off" autocapitalize="off" onkeydown="if(event.key==='Enter')checkScramble()">
+    <button class="btn btn-small" onclick="checkScramble()" style="align-self:center;margin-top:4px;">Submit</button>
+  `;
+}
+
+function checkScramble() {
+  if (challengeAnswered) return;
+  const input = document.getElementById('scramble-input');
+  const guess = input.value.trim().toLowerCase();
+  const words = getLookWords(currentLookIndex);
+  const w = words[currentChallengeIndex];
+  const correct = w.word.toLowerCase().replace('-','');
+
+  if (guess === correct || guess === w.word.toLowerCase()) {
+    challengeAnswered = true;
+    input.style.borderColor = 'var(--green)';
+    input.style.background = '#e8f5e9';
+    onCorrectAnswer(w);
+  } else {
+    lookMistakes++;
+    input.style.borderColor = 'var(--red)';
+    input.style.background = '#ffebee';
+    input.classList.add('wrong');
+    setTimeout(() => {
+      input.style.borderColor = '';
+      input.style.background = '';
+      input.classList.remove('wrong');
+      input.value = '';
+      input.focus();
+    }, 800);
+    // Show definition
+    const area = document.getElementById('challenge-area');
+    let defBox = area.querySelector('.definition-box');
+    if (!defBox) {
+      defBox = document.createElement('div');
+      defBox.className = 'definition-box';
+      area.appendChild(defBox);
+    }
+    defBox.textContent = `Hint: ${w.definition}`;
+  }
+}
+
+function checkAnswer(el, chosen, correct) {
+  if (challengeAnswered) return;
+  challengeAnswered = true;
+
+  const cards = el.parentElement.querySelectorAll('.option-card');
+  cards.forEach(c => c.classList.add('disabled'));
+
+  if (chosen === correct) {
+    el.classList.add('correct');
+    const words = getLookWords(currentLookIndex);
+    const w = words[currentChallengeIndex];
+    onCorrectAnswer(w);
+  } else {
+    el.classList.add('wrong');
+    lookMistakes++;
+    // Highlight correct
+    cards.forEach(c => {
+      if (c.textContent.trim() === correct || (correct.length === 1 && c.textContent.trim().startsWith(correct + ':'))) {
+        c.classList.add('correct');
+      }
+    });
+    // Show definition
+    const words = getLookWords(currentLookIndex);
+    const w = words[currentChallengeIndex];
+    const defBox = document.createElement('div');
+    defBox.className = 'definition-box';
+    defBox.innerHTML = `<strong>${w.word}</strong>: ${w.definition}`;
+    document.getElementById('challenge-area').appendChild(defBox);
+
+    setTimeout(() => {
+      advanceChallenge();
+    }, 2000);
+  }
+}
+
+function onCorrectAnswer(w) {
+  spawnConfetti(8);
+
+  // Unlock pidgin phrase if applicable
+  if (w.pidgin && !gameState.pidginUnlocked.includes(w.pidgin)) {
+    gameState.pidginUnlocked.push(w.pidgin);
+  }
+
+  // Add to unlocked items
+  if (!gameState.unlockedItems.includes(w.unlocks)) {
+    gameState.unlockedItems.push(w.unlocks);
+  }
+
+  // Animate the new slot
+  const words = getLookWords(currentLookIndex);
+  const progress = gameState.lookProgress[currentLookIndex] || [];
+  const equippedSlots = progress.map(idx => words[idx] ? words[idx].slot : null).filter(Boolean);
+  equippedSlots.push(w.slot);
+  renderCharacter(document.getElementById('character-svg'), equippedSlots, w.slot);
+
+  saveState();
+
+  setTimeout(() => advanceChallenge(), 1200);
+}
+
+function advanceChallenge() {
+  const progress = gameState.lookProgress[currentLookIndex] || [];
+  progress.push(currentChallengeIndex);
+  gameState.lookProgress[currentLookIndex] = progress;
+  currentChallengeIndex++;
+  saveState();
+  updateGameUI();
+}
+
+// ===== LOOK COMPLETION =====
+function completeLook() {
+  const elapsed = (Date.now() - lookStartTime) / 1000;
+  let stars = 1;
+  if (lookMistakes === 0) stars = 2;
+  if (lookMistakes === 0 && elapsed < 120) stars = 3;
+
+  const prev = gameState.stars[currentLookIndex] || 0;
+  gameState.stars[currentLookIndex] = Math.max(prev, stars);
+  saveState();
+
+  // Show celebration
+  document.getElementById('celeb-title').textContent = LOOKS[currentLookIndex].name + ' Complete!';
+  document.getElementById('celeb-stars').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+  const msgs = [
+    'You built a whole look!',
+    'Flawless taste! No mistakes!',
+    'Speed queen! Perfect score in record time!'
+  ];
+  document.getElementById('celeb-msg').textContent = msgs[stars - 1];
+  document.getElementById('celebration').classList.add('active');
+  spawnConfetti(30);
+}
+
+function closeCelebration() {
+  document.getElementById('celebration').classList.remove('active');
+  document.body.className = '';
+  showScreen('looks-screen');
+}
+
+// ===== WARDROBE =====
+let wardrobeFilter = 'all';
+let wardrobeEquipped = {};
+
+function renderWardrobe() {
+  const filters = document.getElementById('wardrobe-filters');
+  const cats = ['all','top','bottom','shoes','acc1','acc2','hair'];
+  const catLabels = ['All','Tops','Bottoms','Shoes','Necklaces','Bags','Hair'];
+  filters.innerHTML = cats.map((c,i) =>
+    `<button class="filter-btn ${wardrobeFilter===c?'active':''}" onclick="wardrobeFilter='${c}';renderWardrobe();">${catLabels[i]}</button>`
+  ).join('');
+
+  const grid = document.getElementById('wardrobe-grid');
+  const items = [];
+  WORDS.forEach(w => {
+    if (gameState.unlockedItems.includes(w.unlocks)) {
+      if (wardrobeFilter === 'all' || wardrobeFilter === w.slot) {
+        items.push(w);
+      }
+    }
+  });
+
+  if (items.length === 0) {
+    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;opacity:0.5;font-size:0.9em;">No items unlocked yet. Play looks to earn clothing!</p>';
+  } else {
+    grid.innerHTML = items.map(w => {
+      const equipped = wardrobeEquipped[w.slot] === w.unlocks;
+      return `<div class="wardrobe-item ${equipped?'equipped':''}" onclick="toggleWardrobeItem('${w.slot}','${w.unlocks}')">
+        <div style="font-size:1.8em;">${slotEmoji(w.slot)}</div>
+        <div>${w.word}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const equippedSlots = Object.keys(wardrobeEquipped).filter(k => wardrobeEquipped[k]);
+  renderCharacter(document.getElementById('wardrobe-char-svg'), equippedSlots, null);
+}
+
+function toggleWardrobeItem(slot, itemId) {
+  if (wardrobeEquipped[slot] === itemId) {
+    delete wardrobeEquipped[slot];
+  } else {
+    wardrobeEquipped[slot] = itemId;
+  }
+  renderWardrobe();
+}
+
+function slotEmoji(slot) {
+  const map = { top: '👚', bottom: '👖', shoes: '👟', acc1: '📿', acc2: '👜', hair: '✨' };
+  return map[slot] || '🧵';
+}
+
+// ===== PIDGIN CORNER =====
+function renderPidginCorner() {
+  const list = document.getElementById('pidgin-list');
+  const highestLook = Object.keys(gameState.stars).reduce((max, k) => Math.max(max, parseInt(k)), -1);
+
+  list.innerHTML = PIDGIN_DICT.map(p => {
+    const unlocked = p.lookUnlock <= highestLook + 1 || gameState.pidginUnlocked.includes(p.pidgin);
+    return `<div class="pidgin-card ${unlocked?'':'locked'}">
+      <div class="pidgin">"${p.pidgin}"</div>
+      <div class="english">${unlocked ? p.english : '???'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===== DAILY CHALLENGE =====
+function renderDaily() {
+  updateStreak();
+  document.getElementById('streak-count').textContent = gameState.streak;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const area = document.getElementById('daily-challenge-area');
+  const reward = document.getElementById('daily-reward');
+
+  if (gameState.dailyCompleted === today) {
+    area.innerHTML = `<div class="challenge-area" style="text-align:center;">
+      <p style="font-size:1.1em;">You've completed today's word!</p>
+      <p style="opacity:0.6;margin-top:8px;">Come back tomorrow for a new challenge.</p>
+    </div>`;
+    reward.textContent = '';
+    return;
+  }
+
+  // Pick a word based on date
+  const dayNum = Math.floor(new Date().getTime() / 86400000);
+  const w = WORDS[dayNum % WORDS.length];
+
+  // Build 3 wrong definitions from other random words
+  const wrongDefs = shuffle(WORDS.filter(ww => ww.word !== w.word)).slice(0,3).map(ww => ww.definition);
+  const allDefs = shuffle([w.definition, ...wrongDefs]);
+  challengeAnswered = false;
+
+  area.innerHTML = `<div class="challenge-area">
+    <div class="challenge-type">Daily Word</div>
+    <div class="challenge-prompt">What does "<strong>${w.word}</strong>" mean?</div>
+    <div class="options-grid">
+      ${allDefs.map((o,i) =>
+        `<div class="option-card" onclick="checkDailyIdx(this,${i})" style="font-size:0.85em;">${o}</div>`
+      ).join('')}
+    </div>
+  </div>`;
+  reward.textContent = '';
+
+  // Store correct index for safe comparison
+  window._dailyCorrectIdx = allDefs.indexOf(w.definition);
+  window._dailyWord = w.word;
+  window._dailyDef = w.definition;
+}
+
+function checkDailyIdx(el, idx) {
+  if (challengeAnswered) return;
+  challengeAnswered = true;
+  const cards = el.parentElement.querySelectorAll('.option-card');
+  cards.forEach(c => c.classList.add('disabled'));
+
+  const today = new Date().toISOString().slice(0, 10);
+  const isCorrect = idx === window._dailyCorrectIdx;
+
+  if (isCorrect) {
+    el.classList.add('correct');
+    spawnConfetti(12);
+    gameState.dailyCompleted = today;
+    gameState.streak++;
+    gameState.lastPlayDate = today;
+    saveState();
+    document.getElementById('streak-count').textContent = gameState.streak;
+    document.getElementById('daily-reward').innerHTML = '<p style="color:var(--green);font-weight:700;margin-top:12px;">Correct! Streak +1</p>';
+  } else {
+    el.classList.add('wrong');
+    cards[window._dailyCorrectIdx].classList.add('correct');
+    document.getElementById('daily-reward').innerHTML = `<p style="color:var(--red);margin-top:12px;"><strong>${window._dailyWord}</strong>: ${window._dailyDef}</p>`;
+    gameState.dailyCompleted = today;
+    gameState.lastPlayDate = today;
+    saveState();
+  }
+}
+
+function updateStreak() {
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  if (gameState.lastPlayDate && gameState.lastPlayDate !== today && gameState.lastPlayDate !== yesterday) {
+    gameState.streak = 0;
+    saveState();
+  }
+}
+
+// ===== CONFETTI =====
+function spawnConfetti(count) {
+  const container = document.getElementById('confetti-container');
+  const colors = ['#e91e63','#9c27b0','#ffd54f','#66bb6a','#42a5f5','#ff7043','#ab47bc'];
+  for (let i = 0; i < count; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = (Math.random() * 100) + '%';
+    c.style.background = colors[Math.floor(Math.random() * colors.length)];
+    c.style.animationDelay = (Math.random() * 0.5) + 's';
+    c.style.animationDuration = (1 + Math.random()) + 's';
+    c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    c.style.width = (6 + Math.random() * 6) + 'px';
+    c.style.height = (6 + Math.random() * 6) + 'px';
+    container.appendChild(c);
+    setTimeout(() => c.remove(), 2000);
+  }
+}
+
+// ===== UTILS =====
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function esc(s) {
+  return s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+// ===== INIT =====
+window.addEventListener('DOMContentLoaded', () => {
+  if (!S.get('character')) {
+    showScreen('customize-screen');
+  }
+});
+</script>
+</body>
+</html>
